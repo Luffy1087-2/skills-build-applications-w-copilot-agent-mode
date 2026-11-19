@@ -28,22 +28,22 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 
 ## Implementation decisions
 
-Record your plan here before editing code.
+Keep presentation, logic, and data responsibilities in their existing tiers. The React components use the shared API client and provide loading, empty, and accessible error states. Express routes delegate business rules to the service layer, and Mongoose models own persisted data shape and references. Do not add authentication in this exercise.
 
-- Presentation tier decision:
-- Logic tier decision:
-- Data tier decision:
-- Activity tracking approach:
-- Team management approach:
-- Leaderboard approach:
-- Workout suggestions approach:
+- Presentation tier decision: Keep the four capability pages as separate React components. Use relative `/api` requests through the shared client so Vite's proxy remains the default; render API data and clear loading, empty, and failure states.
+- Logic tier decision: Keep routes thin and put validation, persistence orchestration, scoring, ranking, and suggestion selection in `octofitService`. Return deliberate 4xx responses for invalid input or missing resources rather than leaking database cast errors as 500s.
+- Data tier decision: Define required fields and user/team references in the Mongoose models. Seed representative users, teams, activities, and workouts idempotently; preserve unrelated records and existing team membership when seeding.
+- Activity tracking approach: Validate the activity payload, ensure its user and team IDs are well-formed and refer to existing records, and award one point per submitted minute on the server. Persist and return the user, team, type, minutes, points, and occurrence date.
+- Team management approach: Create and list teams with their submitted names and mascots and member references. Require a name, and default an omitted member list to an empty array.
+- Leaderboard approach: Sum activity points by team, order teams by total points descending, and assign ranks starting at 1.
+- Workout suggestions approach: Find the user by email, rank workouts matching their fitness goal first and otherwise use their most recent activity pattern, and include a reason for the first suggestion. Return a 4xx response when no user matches.
 
 ## Test plan
 
-Record the commands you run and what each failure means.
+Run the focused contract suites first, then build both applications. The backend API suite uses an in-memory MongoDB; the frontend suite stubs network responses, so these checks do not require the local MongoDB or running API/frontend servers.
 
-- Data-tier command: `npm run test:data --prefix octofit-tracker/backend`
-- API command: `npm run test:api --prefix octofit-tracker/backend`
-- Frontend command: `npm test --prefix octofit-tracker/frontend`
-- Backend build command: `npm run build --prefix octofit-tracker/backend`
-- Frontend build command: `npm run build --prefix octofit-tracker/frontend`
+- `npm run test:data --prefix octofit-tracker/backend` — checks model requirements, defaults, references, and that seeding creates representative data idempotently without removing unrelated records. Failures point to a schema or seed-data contract regression.
+- `npm run test:api --prefix octofit-tracker/backend` — checks activity and team creation/listing, invalid-input responses, leaderboard totals/order/ranks, and user-specific workout suggestions. Failures point to route, service, persistence, or response-contract behavior; a 5xx for invalid input is also a failure.
+- `npm test --prefix octofit-tracker/frontend` — checks that each capability renders returned data and meaningful loading, empty, and accessible error states, and that workouts request suggestions for the expected user. Failures point to component rendering or API-client integration.
+- `npm run build --prefix octofit-tracker/backend` — runs the backend TypeScript check. A failure indicates a backend type or compile-time contract issue.
+- `npm run build --prefix octofit-tracker/frontend` — runs the frontend TypeScript check and Vite production build. A failure indicates a frontend type, import, or bundling issue.
