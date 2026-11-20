@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
-import { getJson } from '../api/client.js';
 
 type Props = {
   title: string;
   description: string;
-  path: string;
+  loadData: () => Promise<Record<string, unknown>>;
   resultKey: 'activities' | 'teams' | 'leaderboard' | 'suggestions';
   emptyText: string;
   renderItem: (item: Record<string, unknown>) => string;
 };
 
-export function CapabilityCard({ title, description, path, resultKey, emptyText, renderItem }: Props) {
+export function CapabilityCard({ title, description, loadData, resultKey, emptyText, renderItem }: Props) {
   const [items, setItems] = useState<Record<string, unknown>[] | null>(null);
   const [error, setError] = useState('');
 
@@ -19,7 +18,7 @@ export function CapabilityCard({ title, description, path, resultKey, emptyText,
     setItems(null);
     setError('');
 
-    getJson<Record<string, unknown>>(path)
+    loadData()
       .then((data) => {
         if (active) setItems(Array.isArray(data[resultKey]) ? data[resultKey] as Record<string, unknown>[] : []);
       })
@@ -28,7 +27,7 @@ export function CapabilityCard({ title, description, path, resultKey, emptyText,
       });
 
     return () => { active = false; };
-  }, [path, resultKey]);
+  }, [loadData, resultKey]);
 
   return (
     <section className="card h-100">
